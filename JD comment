@@ -1,0 +1,67 @@
+# -*- coding: utf-8 -*-
+
+import urllib.request
+import json
+import time
+import random
+import pymysql.cursors
+
+def crawlProductComment(url,page):
+
+    #Get the origin data
+    html = urllib.request.urlopen(url).read().decode('gbk')
+    print('html')
+    print(html)
+    print('html')
+    #JSON format
+    jsondata = html[27:-2]
+    print(jsondata)
+    data = json.loads(jsondata)
+
+    print(data['comments'])
+    print(data['comments'][0]['content'])
+    #Review all pages
+    
+    for i in data['comments']:
+        productName = i['referenceName']
+        commentTime = i['creationTime']
+        content = i['content']
+
+        #Key information
+        print("Product Name:{}".format(productName))
+        print("Comment Time:{}".format(commentTime))
+        print("Content:{}".format(content))
+        print("-----------------------------")
+
+        '''
+        Database operation
+        '''
+
+        #Connect to database
+        connection  = pymysql.connect(host = 'localhost',
+                                  user = 'root',
+                                  password = '123456',
+                                  db = 'RUNOOB',
+                                  charset = 'utf8mb4')
+        try:
+            with connection.cursor() as cursor:
+                #Insert the comment
+                sql = "insert into `JD1` (`ProductName`,`Comment`,`CommentTime`) values (%s,%s,%s)"
+
+                #Execute
+                cursor.execute(sql,(productName,content,commentTime))
+
+                #Commit
+                connection.commit()
+        finally:
+            connection.close()
+
+
+for i in range(0,10):
+    print("Getting the comment from page {}".format(i+1))
+    url = 'https://sclub.jd.com/comment/productPageComments.action?callback=fetchJSON_comment98vv264&productId=1384071&score=0&sortType=5&page=' + str(i) +'&pageSize=10&isShadowSku=0&fold=1'
+           
+    crawlProductComment(url,i)
+    #Set sleep time
+    time.sleep(random.randint(31,33))
+
